@@ -13,7 +13,6 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # สร้างตาราง items ถ้ายังไม่มี
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,13 +22,11 @@ def init_db():
         )
     ''')
     
-    # ตรวจสอบและเพิ่มคอลัมน์ filename หากเป็นฐานข้อมูลเวอร์ชันเก่า
     cursor.execute("PRAGMA table_info(items)")
     columns = [column[1] for column in cursor.fetchall()]
     if 'filename' not in columns:
         cursor.execute("ALTER TABLE items ADD COLUMN filename TEXT")
     
-    # สร้างตาราง settings ถ้ายังไม่มี
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
@@ -62,79 +59,119 @@ HTML_TEMPLATE = '''
             --danger: #F28B82;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Thai', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding: 30px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Thai', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
-        header { margin-bottom: 25px; }
-        h1 { font-size: 32px; font-weight: 700; color: #FFFFFF; margin-bottom: 5px; }
+        
+        header { margin-bottom: 20px; text-align: left; }
+        h1 { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 5px; }
         
         .editable-title {
             background: transparent; border: 1px dashed transparent; color: var(--text-sub);
-            font-size: 16px; padding: 4px 8px; border-radius: 6px; width: 100%; max-width: 400px; transition: all 0.2s;
+            font-size: 15px; padding: 4px 8px; border-radius: 6px; width: 100%; max-width: 350px; transition: all 0.2s;
         }
         .editable-title:hover, .editable-title:focus {
             background: var(--bg-card); border-color: var(--accent); color: var(--text-main); outline: none;
         }
 
+        /* Toolbar & Mobile Friendly */
         .toolbar {
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 15px; margin-bottom: 25px; background-color: var(--bg-card); padding: 12px 20px;
-            border-radius: 12px; border: 1px solid var(--border);
+            gap: 12px; margin-bottom: 20px; background-color: var(--bg-card); padding: 12px 16px;
+            border-radius: 14px; border: 1px solid var(--border);
         }
-        .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tabs { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
         .tab-btn {
-            background: transparent; border: none; color: var(--text-sub); padding: 8px 16px;
-            border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;
+            background: var(--bg-main); border: 1px solid var(--border); color: var(--text-sub); padding: 8px 12px;
+            border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; flex: 1; text-align: center;
         }
         .tab-btn:hover { color: var(--text-main); background: var(--bg-card-hover); }
-        .tab-btn.active { background-color: var(--accent); color: #121212; font-weight: 600; }
+        .tab-btn.active { background-color: var(--accent); color: #121212; border-color: var(--accent); font-weight: 600; }
 
-        .actions { display: flex; gap: 10px; }
+        .actions { display: flex; gap: 10px; width: 100%; align-items: center; }
         .search-box {
             background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main);
-            padding: 8px 14px; border-radius: 8px; font-size: 14px; outline: none; width: 200px;
+            padding: 10px 14px; border-radius: 10px; font-size: 14px; outline: none; flex: 1;
         }
         .search-box:focus { border-color: var(--accent); }
 
         .btn-primary {
-            background-color: var(--accent); color: #121212; border: none; padding: 8px 16px;
-            border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; text-decoration: none;
+            background-color: var(--accent); color: #121212; border: none; padding: 10px 16px;
+            border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+            white-space: nowrap; font-size: 14px; transition: background-color 0.2s;
         }
         .btn-primary:hover { background-color: var(--accent-hover); }
 
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        /* Grid Cards */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
         .card {
             background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-            padding: 16px; position: relative; transition: transform 0.2s, border-color 0.2s;
-            display: flex; flex-direction: column; align-items: center; text-align: center;
+            padding: 14px; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center;
+            transition: border-color 0.2s;
         }
-        .card:hover { transform: translateY(-3px); border-color: var(--accent); }
-        .card-icon { font-size: 40px; margin-bottom: 12px; height: 60px; display: flex; align-items: center; justify-content: center; }
-        .card-title { font-size: 15px; font-weight: 500; color: var(--text-main); margin-bottom: 6px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-category { font-size: 12px; color: var(--text-sub); background: var(--bg-main); padding: 2px 8px; border-radius: 4px; margin-bottom: 12px; }
+        .card:hover { border-color: var(--accent); }
+        .card-icon { font-size: 36px; margin-bottom: 8px; height: 50px; display: flex; align-items: center; justify-content: center; }
+        .card-title { font-size: 14px; font-weight: 500; color: var(--text-main); margin-bottom: 4px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-category { font-size: 11px; color: var(--text-sub); background: var(--bg-main); padding: 2px 6px; border-radius: 4px; margin-bottom: 10px; }
         
-        .card-actions { display: flex; gap: 8px; width: 100%; margin-top: auto; }
-        .card-btn { padding: 6px; border-radius: 6px; border: none; font-size: 12px; cursor: pointer; font-weight: 500; display: inline-block; text-align: center; text-decoration: none;}
+        .card-actions { display: flex; gap: 6px; width: 100%; margin-top: auto; }
+        .card-btn { padding: 6px 4px; border-radius: 6px; border: none; font-size: 12px; cursor: pointer; font-weight: 500; display: inline-block; text-align: center; text-decoration: none;}
         .btn-download { background: rgba(164, 200, 240, 0.1); color: var(--accent); flex: 1; }
         .btn-download:hover { background: var(--accent); color: #121212; }
         .btn-delete { background: rgba(242, 139, 130, 0.1); color: var(--danger); flex: 1; }
         .btn-delete:hover { background: var(--danger); color: #121212; }
 
-        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--text-sub); font-size: 15px; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-sub); font-size: 14px; }
 
-        /* Modal */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
+        /* Modal ดีไซน์มือถือ */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); justify-content: center; align-items: flex-end; z-index: 1000; }
         .modal.active { display: flex; }
-        .modal-content { background: var(--bg-card); border: 1px solid var(--border); padding: 24px; border-radius: 12px; width: 100%; max-width: 400px; }
-        .modal-content h3 { margin-bottom: 15px; color: #fff; }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border); padding: 24px 20px 30px 20px; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; animation: slideUp 0.25s ease-out; }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .modal-content h3 { color: #fff; font-size: 18px; font-weight: 600; }
+        .close-btn { background: none; border: none; color: var(--text-sub); font-size: 20px; cursor: pointer; }
+
+        /* ปุ่มเลือกหมวดหมู่แบบ Grid ใน Modal */
+        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .cat-select-btn {
+            background: var(--bg-main); border: 2px solid var(--border); border-radius: 12px; padding: 12px;
+            text-align: center; color: var(--text-main); cursor: pointer; font-size: 14px; font-weight: 500;
+            display: flex; flex-direction: column; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .cat-select-btn span { font-size: 22px; }
+        .cat-select-btn.selected { border-color: var(--accent); background: rgba(164, 200, 240, 0.08); color: var(--accent); }
+
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 5px; }
-        .form-control { width: 100%; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; font-size: 14px; outline: none; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 5px; font-weight: 500; }
+        .form-control { width: 100%; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main); padding: 11px 14px; border-radius: 10px; font-size: 14px; outline: none; }
         .form-control:focus { border-color: var(--accent); }
-        input[type="file"] { padding: 7px; color: var(--text-sub); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 8px 16px; border-radius: 8px; cursor: pointer; }
-        .btn-secondary:hover { background: var(--bg-card-hover); }
+
+        /* Dropzone อัปโหลดไฟล์ */
+        .file-drop-area {
+            border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center;
+            background: var(--bg-main); cursor: pointer; position: relative; transition: border-color 0.2s;
+        }
+        .file-drop-area input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .file-msg { font-size: 13px; color: var(--text-sub); pointer-events: none; }
+        .file-msg span { color: var(--accent); font-weight: 500; }
+
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 11px; border-radius: 10px; cursor: pointer; font-weight: 500; flex: 1; text-align: center; }
+        .btn-submit { flex: 2; padding: 11px; border-radius: 10px; }
+
+        @media(min-width: 600px) {
+            body { padding: 30px; }
+            h1 { font-size: 30px; }
+            .modal { align-items: center; }
+            .modal-content { border-radius: 16px; padding: 24px; animation: none; }
+            .grid-container { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -146,16 +183,18 @@ HTML_TEMPLATE = '''
         </header>
 
         <div class="toolbar">
+            <div class="actions">
+                <input type="text" id="searchInput" class="search-box" placeholder="🔍 ค้นหาข้อมูล..." oninput="handleSearch()">
+                <button class="btn-primary" onclick="openModal()">
+                    ➕ เพิ่มข้อมูล
+                </button>
+            </div>
             <div class="tabs">
                 <button class="tab-btn active" onclick="filterCategory('all', this)">ทั้งหมด</button>
                 <button class="tab-btn" onclick="filterCategory('file', this)">📁 ไฟล์</button>
                 <button class="tab-btn" onclick="filterCategory('image', this)">🖼️ รูป</button>
                 <button class="tab-btn" onclick="filterCategory('drive', this)">💽 ไดรฟ์</button>
                 <button class="tab-btn" onclick="filterCategory('album', this)">🗂️ อัลบั้ม</button>
-            </div>
-            <div class="actions">
-                <input type="text" id="searchInput" class="search-box" placeholder="ค้นหาข้อมูล..." oninput="handleSearch()">
-                <button class="btn-primary" onclick="openModal()">+ เพิ่มข้อมูล</button>
             </div>
         </div>
 
@@ -185,36 +224,57 @@ HTML_TEMPLATE = '''
                 </div>
             </div>
             {% endfor %}
-            <div class="empty-state" id="emptyState" style="display: none;">ไม่พบข้อมูลในเงื่อนไขที่คุณค้นหา</div>
+            <div class="empty-state" id="emptyState" style="display: none;">ไม่พบข้อมูลที่คุณค้นหา</div>
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal เพิ่มข้อมูลแบบเลือกประเภทไฟล์ได้ง่ายบนมือถือ -->
     <div class="modal" id="addModal">
         <div class="modal-content">
-            <h3>เพิ่มไฟล์ใหม่</h3>
+            <div class="modal-header">
+                <h3>เพิ่มข้อมูลใหม่</h3>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
             <form action="{{ url_for('add_item') }}" method="POST" enctype="multipart/form-data">
+                
+                <!-- เลือกประเภทไฟล์ผ่านปุ่มไอคอน -->
+                <div class="form-group">
+                    <label>เลือกประเภท (หมวดหมู่)</label>
+                    <input type="hidden" name="category" id="selectedCategory" value="file">
+                    <div class="category-grid">
+                        <div class="cat-select-btn selected" id="cat-file" onclick="selectCategory('file')">
+                            <span>📁</span> ไฟล์ทั่วไป
+                        </div>
+                        <div class="cat-select-btn" id="cat-image" onclick="selectCategory('image')">
+                            <span>🖼️</span> รูปภาพ
+                        </div>
+                        <div class="cat-select-btn" id="cat-drive" onclick="selectCategory('drive')">
+                            <span>💽</span> ไดรฟ์
+                        </div>
+                        <div class="cat-select-btn" id="cat-album" onclick="selectCategory('album')">
+                            <span>🗂️</span> อัลบั้ม
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>ชื่อที่แสดง</label>
-                    <input type="text" name="name" class="form-control" required placeholder="เช่น เอกสารงบประมาณ">
+                    <input type="text" name="name" id="itemName" class="form-control" required placeholder="เช่น เอกสารงบประมาณ">
                 </div>
+
                 <div class="form-group">
-                    <label>หมวดหมู่</label>
-                    <select name="category" class="form-control">
-                        <option value="file">📁 ไฟล์</option>
-                        <option value="image">🖼️ รูป</option>
-                        <option value="drive">💽 ไดรฟ์</option>
-                        <option value="album">🗂️ อัลบั้ม</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>อัปโหลดไฟล์</label>
-                    <input type="file" name="file" class="form-control" required>
+                    <label>ไฟล์แนบ (มือถือเลือกได้ทุกไฟล์)</label>
+                    <div class="file-drop-area">
+                        <input type="file" name="file" id="fileInput" accept="*/*" required onchange="handleFileSelect(this)">
+                        <div class="file-msg" id="fileMsg">
+                            📂 แตะเพื่อเลือกไฟล์ (PDF, รูป, ซิป, อื่นๆ)
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal()">ยกเลิก</button>
-                    <button type="submit" class="btn-primary">อัปโหลด</button>
+                    <button type="submit" class="btn-primary btn-submit">อัปโหลด</button>
                 </div>
             </form>
         </div>
@@ -235,6 +295,31 @@ HTML_TEMPLATE = '''
                 });
             }, 500);
         });
+
+        // ฟังก์ชันเลือกหมวดหมู่ใน Modal
+        function selectCategory(cat) {
+            document.getElementById('selectedCategory').value = cat;
+            document.querySelectorAll('.cat-select-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('cat-' + cat).classList.add('selected');
+        }
+
+        // ฟังก์ชันแสดงชื่อไฟล์และเติมชื่อให้อัตโนมัติ
+        function handleFileSelect(input) {
+            const fileMsg = document.getElementById('fileMsg');
+            const nameInput = document.getElementById('itemName');
+            
+            if (input.files && input.files.length > 0) {
+                const fileName = input.files[0].name;
+                fileMsg.innerHTML = `✅ เลือก: <strong style="color: var(--accent);">${fileName}</strong>`;
+                
+                if (!nameInput.value.trim()) {
+                    const cleanName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+                    nameInput.value = cleanName;
+                }
+            } else {
+                fileMsg.innerHTML = `📂 แตะเพื่อเลือกไฟล์ (PDF, รูป, ซิป, อื่นๆ)`;
+            }
+        }
 
         function filterCategory(category, btnElement) {
             currentCategory = category;
@@ -266,11 +351,16 @@ HTML_TEMPLATE = '''
         }
 
         function openModal() { document.getElementById('addModal').classList.add('active'); }
-        function closeModal() { document.getElementById('addModal').classList.remove('active'); }
+        function closeModal() { 
+            document.getElementById('addModal').classList.remove('active');
+            document.getElementById('fileMsg').innerHTML = `📂 แตะเพื่อเลือกไฟล์ (PDF, รูป, ซิป, อื่นๆ)`;
+        }
     </script>
 </body>
 </html>
 '''
+
+init_db()
 
 @app.route('/')
 def index():
@@ -345,9 +435,4 @@ def update_title():
     return jsonify({'status': 'error'}), 400
 
 if __name__ == '__main__':
-    init_db()
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
-else:
-    # รันผ่าน Gunicorn บน Render
-    init_db()
+    app.run(debug=True, port=5000)
